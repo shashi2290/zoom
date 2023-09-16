@@ -21,7 +21,15 @@ import RemoteControlPanel, { RemoteControlIndication } from './components/remote
 import { useCameraControl } from './hooks/useCameraControl';
 import { useNetworkQuality } from './hooks/useNetworkQuality';
 import ReportBtn from './components/report-btn';
-const VideoContainer: React.FunctionComponent<RouteComponentProps> = (props) => {
+import { Button, Drawer, DrawerProps, Space, notification } from 'antd';
+import { NotificationPlacement } from 'antd/lib/notification';
+import { LoremIpsum } from 'lorem-ipsum';
+
+interface VideoProps extends RouteComponentProps {
+  role?: number;
+}
+
+const VideoContainer: React.FunctionComponent<VideoProps> = (props) => {
   const zmClient = useContext(ZoomContext);
   const {
     mediaStream,
@@ -81,6 +89,57 @@ const VideoContainer: React.FunctionComponent<RouteComponentProps> = (props) => 
   const networkQuality = useNetworkQuality(zmClient);
 
   const isSharing = isRecieveSharing || isStartedShare;
+
+  const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState<DrawerProps['placement']>('right');
+
+  const showDrawer = () => {
+    setOpen(true);
+  };
+
+  // const onChange = (e:) => {
+  //   setPlacement(e.target.value);
+  // };
+
+  const onClose = () => {
+    setOpen(false);
+  };
+
+  const [api, contextHolder] = notification.useNotification();
+  let notifyMessage = ''
+  const openNotification = () => {
+    api.info({
+      message: `New Notification`,
+      description: notifyMessage,
+      placement: 'topRight',
+    });
+  };
+
+  const createNotification = () => {
+    const lorem = new LoremIpsum({
+      sentencesPerParagraph: {
+        max: 8,
+        min: 4
+      },
+      wordsPerSentence: {
+        max: 16,
+        min: 4
+      }
+    });
+    notifyMessage = lorem.generateSentences(3);
+    if(props.role) {
+      openNotification();
+    }
+  }
+
+  useEffect(() => {
+    const notificationInterval = setInterval(() => {
+      createNotification()
+    }, 30000);
+
+    return () => { clearInterval(notificationInterval) }
+  }, [])
+
   useEffect(() => {
     if (isSharing && shareContainerRef.current) {
       const { width, height } = sharedContentDimension;
@@ -121,6 +180,7 @@ const VideoContainer: React.FunctionComponent<RouteComponentProps> = (props) => 
   );
   return (
     <div className="viewport">
+      {contextHolder}
       <div
         className={classnames('share-container', {
           'in-sharing': isSharing
@@ -203,7 +263,27 @@ const VideoContainer: React.FunctionComponent<RouteComponentProps> = (props) => 
       )}
       {isInControl && <RemoteControlIndication stopCameraControl={stopControl} />}
       {totalPage > 1 && <Pagination page={page} totalPage={totalPage} setPage={setPage} inSharing={isSharing} />}
-      <ReportBtn />
+      {/* <ReportBtn /> */}
+      {props.role &&  <Button type="primary" onClick={showDrawer}>
+          Profile
+        </Button>}
+      <Drawer
+        title="Attendees List"
+        placement={placement}
+        width={500}
+        onClose={onClose}
+        open={open}
+        extra={
+          <Space>
+            <Button onClick={onClose}>Cancel</Button>
+            <Button type="primary" onClick={onClose}>
+              OK
+            </Button>
+          </Space>
+        }
+      >
+        {visibleParticipants.filter(p => !p.isHost).map((p, idx) => (<p key={p.userId} >{`${idx+1}. ${p.displayName}`}</p>))}
+      </Drawer>
     </div>
   );
 };

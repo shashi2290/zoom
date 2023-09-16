@@ -15,6 +15,7 @@
     "js-base64": "^3.6.0",
     "jsrsasign": "^10.5.26",
     "lodash": "^4.17.21",
+    "lorem-ipsum": "^2.0.8",
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "react-draggable": "^4.4.3",

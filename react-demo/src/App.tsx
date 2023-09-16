@@ -1,24 +1,17 @@
 import { useEffect, useContext, useState, useCallback, useReducer, useMemo } from 'react';
-import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Switch, Route, useHistory } from 'react-router-dom';
 import ZoomVideo, { ConnectionState, ReconnectReason } from '@zoom/videosdk';
-import { message, Modal } from 'antd';
+import { message, Modal, Button } from 'antd';
 import 'antd/dist/antd.min.css';
 import produce from 'immer';
 import Home from './feature/home/home';
 import Video from './feature/video/video';
-import VideoSingle from './feature/video/video-single';
-import VideoNonSAB from './feature/video/video-non-sab';
-import Preview from './feature/preview/preview';
 import ZoomContext from './context/zoom-context';
 import ZoomMediaContext from './context/media-context';
 import LoadingLayer from './component/loading-layer';
-import Chat from './feature/chat/chat';
-import Command from './feature/command/command';
-import Subsession from './feature/subsession/subsession';
 import { MediaStream } from './index-types';
 import './App.css';
 
-import { isAndroidBrowser } from './utils/platform';
 interface AppProps {
   meetingArgs: {
     sdkKey: string;
@@ -26,11 +19,13 @@ interface AppProps {
     signature: string;
     name: string;
     password?: string;
+    role?: number;
     webEndpoint?: string;
     enforceGalleryView?: string;
     customerJoinId?: string;
     lang?: string;
   };
+  meetLink: string;
 }
 const mediaShape = {
   audio: {
@@ -99,12 +94,15 @@ function App(props: AppProps) {
       signature,
       name,
       password,
+      role,
       webEndpoint: webEndpointArg,
       enforceGalleryView,
       customerJoinId,
       lang
-    }
+    },
+    meetLink
   } = props;
+
   const [loading, setIsLoading] = useState(true);
   const [loadingText, setLoadingText] = useState('');
   const [isFailover, setIsFailover] = useState<boolean>(false);
@@ -219,31 +217,53 @@ function App(props: AppProps) {
       zmClient.off('merged-audio', onAudioMerged);
     };
   }, [zmClient, onConnectionChange, onMediaSDKChange, onDialoutChange, onAudioMerged]);
+
+  const [attendeeName, setAttendeeName] = useState('')
+
+  const handleContinue = () => {
+    const urlObj = new URL(meetLink);
+    urlObj.searchParams.set('name', attendeeName);
+    let updatedMeetLink = urlObj.toString();
+    window.location.href = updatedMeetLink;
+    localStorage.setItem('name', attendeeName);
+    localStorage.setItem('role', 'ATTENDEE');
+  }
+
   return (
     <div className="App">
       {loading && <LoadingLayer content={loadingText} />}
       {!loading && (
         <ZoomMediaContext.Provider value={mediaContext}>
           <Router>
-                      <Switch>
-                        <Route
-                          path="/"
-                          render={(props) => (
-                            <Home {...props} status={status} onLeaveOrJoinSession={onLeaveOrJoinSession} />
-                          )}
-                          exact
-                        />
-                        <Route path="/index.html" component={Home} exact />
-                        <Route path="/chat" component={Chat} />
-                        <Route path="/command" component={Command} />
-                        <Route
-                          path="/video"
-                          component={isSupportGalleryView ? Video : galleryViewWithoutSAB ? VideoNonSAB : VideoSingle}
-                        />
-                        <Route path="/subsession" component={Subsession} />
-                        <Route path="/preview" component={Preview} />
-                      </Switch>
-                    </Router>
+            <Switch>
+              <Route
+                path="/"
+                render={(props) => {
+                  if(!name) {
+                    return (
+                      <div style={{marginTop: '99px'}}>
+                        <p>To enter the meet, enter your name and click continue</p>
+                        <label>Enter Name</label>
+                        <input style={{marginLeft: '15px'}} type='text' name='attendeeName' value={attendeeName} onChange={(e) => setAttendeeName(e.target.value)}></input>
+                        <Button style={{display: 'block', margin: 'auto', marginTop: '25px'}} type='primary' onClick={handleContinue} >Continue</Button>
+                      </div>
+                    )
+                  }
+                  return (
+                    <Home {...props} status={status} meetLink={meetLink} role={role} onLeaveOrJoinSession={onLeaveOrJoinSession} />
+                  )
+                }}
+                exact
+              />
+              <Route
+                path="/video"
+                render={(props) =>  {
+                  const updatedProps = {...props, role: role}
+                  return (<Video {...updatedProps} />)
+                }}
+              />
+            </Switch>
+          </Router>
         </ZoomMediaContext.Provider>
       )}
     </div>

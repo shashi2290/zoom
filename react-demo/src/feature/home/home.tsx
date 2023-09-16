@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-globals */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { Card, Button } from 'antd';
 import { IconFont } from '../../component/icon-font';
@@ -8,43 +8,46 @@ import './home.scss';
 const { Meta } = Card;
 interface HomeProps extends RouteComponentProps {
   status: string;
+  meetLink: string;
+  role?: number;
   onLeaveOrJoinSession: () => void;
 }
 const Home: React.FunctionComponent<HomeProps> = (props) => {
-  const { history, status, onLeaveOrJoinSession } = props;
+  const { history, status, onLeaveOrJoinSession, meetLink, role } = props;
   const onCardClick = (type: string) => {
-      history.push(`/${type}${location.search}`);
+    if (type === "meet-link") {
+      const urlObj = new URL(meetLink);
+      urlObj.searchParams.set('role', '0');
+      let attendeeMeetLink = urlObj.toString();
+      navigator.clipboard.writeText(attendeeMeetLink);
+      // history.push('video')
+      // window.location.href = attendeeMeetLink;
+      return
+    }
+    history.push(`/${type}${location.search}`);
   };
+  if (role) {
+    localStorage.setItem('role', "HOST")
+    localStorage.setItem('name', "HOST")
+  }
+  useEffect(() => {
+    if(!role) {
+      history.push('/video')
+    }
+  }, [role])
+
   const featureList = [
     {
       key: 'video',
       icon: 'icon-meeting',
-      title: 'Audio, video and share',
-      description: 'Gallery Layout, Start/Stop Audio, Mute/Unmute, Start/Stop Video, Start/Stop Screen Share'
+      title: 'Meeting Session',
+      description: 'Click on this card to join the meet session...'
     },
     {
-      key: 'chat',
-      icon: 'icon-chat',
-      title: 'Session chat',
-      description: 'Session Chat, Chat Priviledge'
-    },
-    {
-      key: 'command',
-      icon: 'icon-chat',
-      title: 'Command Channel chat',
-      description: 'Session Command Channel chat'
-    },
-    {
-      key: 'subsession',
-      icon: 'icon-group',
-      title: 'Subsession',
-      description: 'Open/Close Subsession, Assign/Move Participants into Subsession, Join/Leave Subsession'
-    },
-    {
-      key: 'preview',
-      icon: 'icon-meeting',
-      title: 'Local Preview',
-      description: 'Audio and Video preview'
+      key: 'meet-link',
+      icon: 'icon-share',
+      title: 'Copy meet Link and share with Attendees',
+      description: 'Copy this meet link to share with other to join session'
     }
   ];
   let actionText;
@@ -56,27 +59,6 @@ const Home: React.FunctionComponent<HomeProps> = (props) => {
   return (
     <div>
       <div className="nav">
-        <a href="/" className="navhome">
-          <img src="./logo.svg" alt="Home" />
-          <span>VideoSDK Demo</span>
-        </a>
-        <div className="navdoc">
-          <a
-            href="https://marketplace.zoom.us/docs/sdk/video/web/reference"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <span>API Reference</span>
-          </a>
-
-          <a
-            href="https://marketplace.zoom.us/docs/sdk/video/web/build/sample-app"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <span>Doc</span>
-          </a>
-        </div>
         {actionText && (
           <Button type="link" className="navleave" onClick={onLeaveOrJoinSession}>
             {actionText}
@@ -85,7 +67,7 @@ const Home: React.FunctionComponent<HomeProps> = (props) => {
       </div>
 
       <div className="home">
-        <h1>Zoom Video SDK feature</h1>
+        <h1>Zoom Video MEET Demo</h1>
         <div className="feature-entry">
           {featureList.map((feature) => {
             const { key, icon, title, description } = feature;
