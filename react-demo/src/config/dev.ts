@@ -1,12 +1,12 @@
 import { getExploreName } from '../utils/platform';
 
 export const devConfig = {
-  sdkKey: 'zC4EwEs1fmQ0B0nMYUvwgEj2IE5Q7jaQzl1Q',
-  sdkSecret: 'cxlsyFCV58nOJG8FXsieloq6SPFXfaKAP7F9',
+  sdkKey: '',
+  sdkSecret: '',
   webEndpoint: 'zoom.us',
-  topic: 'test-topic',
-  name: `HOST`,
-  password: '123',
+  topic: '',
+  name: `${getExploreName()}-${Math.floor(Math.random() * 1000)}`,
+  password: '',
   signature: '',
   sessionKey: '',
   userIdentity: '',
